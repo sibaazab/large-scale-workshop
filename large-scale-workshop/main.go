@@ -28,6 +28,6 @@ func main() {
 			utils.Logger.Printf("Loading service type: %v\n", config.Type)
 		default:
 			utils.Logger.Fatalf("Unknown configuration type: %v", config.Type) 
-			os.Exit(4)
-	} 
+			os.Exit(4) // comment
+	}    
 }
