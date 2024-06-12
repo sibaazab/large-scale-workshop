@@ -587,13 +587,13 @@ func (chord *ChordDHT) Delete(key string) error{
 
 
 //go back dht.obj
-func (dht *ChordDHT) DeleteObject() error{
+func (dht *ChordDHT) DeleteObject() error {
 	var out_error *C.char
-	C.delete_global_ref(unsafe.Pointer(Chord.instance))
+	C.delete_global_ref(unsafe.Pointer(dht.instance))
 	if out_error != nil {
 		return errors.New(C.GoString(out_error))
 	}
-	return nil;
+	return nil
 }
 
 func TestChordDHT(t *testing.T) {
