@@ -5,6 +5,7 @@ import (
 	"github.com/sibaazab/large-scale-workshop.git/Config"     
 	"github.com/sibaazab/large-scale-workshop.git/utils"     
 	"gopkg.in/yaml.v2" 
+	TestService "github.com/sibaazab/large-scale-workshop.git/services/test-service/service"
 )
 
 //hello
@@ -27,6 +28,7 @@ import (
 			os.Exit(3) }
 		switch config.Type { case "TestService":
 		utils.Logger.Printf("Loading service type: %v\n", config.Type)
+		TestService.Start(configData)
 		default:
 		utils.Logger.Fatalf("Unknown configuration type: %v", config.Type)
 		os.Exit(4)
