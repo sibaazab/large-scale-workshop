@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/MetaFFI/lang-plugin-go/go-runtime v0.1.2 // indirect
+	github.com/MetaFFI/lang-plugin-go/go-runtime v0.1.2
 	github.com/timandy/routine v1.1.3 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect

@@ -8,9 +8,9 @@ import (
 	//"google.golang.org/grpc"
 	//"google.golang.org/protobuf/types/known/wrapperspb"
 )
-
+var listenAddress string= "[::]:33899"
 func TestHelloWorld(t *testing.T) {
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 	r, err := c.HelloWorld()
 	if err != nil {
 		t.Fatalf("could not call HelloWorld: %v", err)
@@ -44,7 +44,7 @@ func TestHelloToUser(t *testing.T) {
 		return
 	}
 
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 
 	res, err := c.HelloToUser(context.Background(), username)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestHelloToUser(t *testing.T) {
 }
 
 func TestWaitAndRand(t *testing.T) {
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 	resPromise, err := c.WaitAndRand(3)
 	if err != nil {
 		t.Fatalf("Calling WaitAndRand failed: %v", err)
@@ -81,7 +81,7 @@ func TestStore(t *testing.T) {
 		return
 	}
 
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 
 	err := c.Store(context.Background(), keyStore, value)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestGet(t *testing.T) {
 		return
 	}
 
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 
 	res, err := c.Get(context.Background(), keyGet)
 	if err != nil {
@@ -109,17 +109,17 @@ func TestGet(t *testing.T) {
 }
 
 func TestIsAlive(t *testing.T) {
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 
 	res, err := c.isAlive()
 	if err != nil {
 		t.Fatalf("could not call Get: %v", err)
 		return
 	}
-	t.Logf("Response: %v", res.Value)
+	t.Logf("Response: %v", res)
 }
 func TestExtractLinksFromURL(t *testing.T) {
-	c := NewTestServiceClient("localhost:50051")
+	c := NewTestServiceClient(listenAddress)
 	Depth32 = int32(Depth)
 	//log.Printf("the depth is %v", Depth32)
 	res, err := c.ExtractLinksFromURL(context.Background(), Url, Depth32)

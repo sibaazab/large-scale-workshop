@@ -19,7 +19,7 @@ var cacheMap map[string]string
 
 func init() {
 	cacheMap = make(map[string]string)
-	log.Printf("map initialized")
+	log.Printf("map initialized sdfs")
 
 	pythonRuntime = metaffi.NewMetaFFIRuntime("python311")
 	err := pythonRuntime.LoadRuntimePlugin()
@@ -81,11 +81,11 @@ func ExtractLinksFromURL(url string, depth int32) ([]string, error) {
 		return nil, err
 	}
 	if depth == 0 {
-		empty_lst:= make([]string, 0,0)
+		//empty_lst:= make([]string, 0,0)
 
-		//lst := make([]string, 0, 1)
-		//lst = append(lst, url)
-		return empty_lst, nil
+		lst := make([]string, 0, 1)
+		lst = append(lst, url)
+		return lst, nil
 	}
 	return res[0].([]string), nil
 }

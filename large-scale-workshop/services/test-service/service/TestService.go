@@ -4,6 +4,9 @@ import (
 	"log"
 	//"net"
 	"context"
+	//"fmt"
+	//"sync"
+    //"time"
 	
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	. "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
@@ -20,11 +23,11 @@ type testServiceImplementation struct{
 func Start(configData []byte) error { 
     bindgRPCToService := func(s grpc.ServiceRegistrar) { 
         RegisterTestServiceServer(s, &testServiceImplementation{})
-    } 
-    services.Start("TestService", 50051, bindgRPCToService) 
+    }
+    assignedPort :=services.Start("TestService" , bindgRPCToService) 
+	log.Printf("TestService listening on port %d", assignedPort)
     return nil
 }
-
 
 func (obj *testServiceImplementation) HelloWorld(ctxt context.Context,_ *emptypb.Empty) (res *wrapperspb.StringValue,err error) {
     return wrapperspb.String(TestServiceServant.HelloWorld()),nil }
@@ -68,3 +71,4 @@ func (testServiceImplementation) ExtractLinksFromURL(ctxt context.Context, param
 	log.Printf("the links array is ")
 	return &ExtractLinksFromURLReturnedValue{Links: linksArr}, nil
 }
+
