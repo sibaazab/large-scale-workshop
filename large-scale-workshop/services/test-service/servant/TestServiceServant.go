@@ -66,7 +66,7 @@ func Get(key string) string {
 
 func Store(key string, value string) {
 	cacheMap[key] = value
-	return
+	return 
 }
 
 func IsAlive() bool {

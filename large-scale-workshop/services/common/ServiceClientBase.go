@@ -1,15 +1,20 @@
-package services
+package common
 
 import (
-    "context"
-    "fmt"
-    "math/rand"
-    "time"
+	//"context"
+	"fmt"
+	"log"
+	"math/rand"
+	"os"
+	"time"
 
-    "google.golang.org/grpc"
-    //"google.golang.org/grpc/credentials/insecure"
-    registery_ser "github.com/sibaazab/large-scale-workshop.git/services/registry-service/service"
-    "google.golang.org/protobuf/types/known/wrapperspb"
+	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
+
+	//"google.golang.org/grpc/credentials/insecure"
+	registeryClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
+	//"google.golang.org/protobuf/types/known/wrapperspb"
+    "github.com/sibaazab/large-scale-workshop.git/Config"
 )
 
 type ServiceClientBase[client_t any] struct {
@@ -26,16 +31,41 @@ func NewServiceClientBase[client_t any](registryAddresses []string, createClient
     }
 }
 
+func (obj *ServiceClientBase[client_t]) LoadRegistryAddresses() {
+	configFile := "/workspaces/large-scale-workshop/services/common/RegistryAddresses.yaml"
+	configData, err := os.ReadFile(configFile)
+	if err != nil {
+		log.Fatalf("error reading registry yaml file: %v", err)
+		os.Exit(2)
+	}
+	var config Config.RegistryServiceConfig
+	err = yaml.Unmarshal(configData, &config) // parses YAML
+	if err != nil {
+		log.Fatalf("error unmarshaling registry addresses data: %v", err)
+		os.Exit(3)
+	}
+	if len(config.RegistryAddresses) <= 0 {
+		log.Fatalf("registry addresses yaml file does not include any enteries")
+		os.Exit(4)
+	}
+	obj.RegistryAddresses = config.RegistryAddresses
+}
+
 func (obj *ServiceClientBase[client_t]) pickNode() (string, error) {
 
-    nodes, err := registery_ser.NewRegistryService().Discover(context.Background(), wrapperspb.String(obj.ServiceName))
-    if err != nil {
+    //nodes, err := registery_ser.Discover(context.Background(), wrapperspb.String(obj.ServiceName))
+	client:= registeryClient.NewRegistryServiceClient(obj.RegistryAddresses)
+    nodes, err := client.Discover(obj.ServiceName)
+	
+
+	if err != nil {
         return "", err
     }
 
     rand.Seed(time.Now().UnixNano())
-    index := rand.Intn(len(nodes.GetNodes()))
-    return nodes.GetNodes()[index], nil
+    index := rand.Intn(len(nodes))
+	log.Printf("%v", nodes[index])
+    return nodes[index], nil
 }
 
 func (obj *ServiceClientBase[client_t]) Connect() (res client_t, closeFunc func(), err error) {

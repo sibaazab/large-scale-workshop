@@ -1,11 +1,16 @@
-package RegistryServiceClient
+package ResgistryService
 
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	
+	"log"
 
+	//"log"
+
+	//"log"
+
+	"math/rand"
+	//registery  "github.com/sibaazab/large-scale-workshop.git/services/registry-service/service"
 	service "github.com/sibaazab/large-scale-workshop.git/services/registry-service/common"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -22,6 +27,8 @@ func (obj *RegistryServiceClient) PickRandomRegistry() string {
 	index := rand.Intn(len(obj.Addresses))
 
 	// Get the random element
+	//log.Printf("picked the registery, %v", obj.Addresses[index])
+	log.Printf("the registery chosen forn the testArevice is %v", obj.Addresses[index])
 	return obj.Addresses[index]
 }
 
@@ -48,9 +55,9 @@ func NewRegistryServiceClient(addresses []string) *RegistryServiceClient {
 }
 
 func (obj *RegistryServiceClient) Discover(service_name string) ([]string, error) {
+	
 	c, closeFunc, _ := obj.Connect()
 	defer closeFunc()
-
 	r, err := c.Discover(context.Background(), &wrapperspb.StringValue{Value: service_name})
 
 	if err != nil {
@@ -62,8 +69,9 @@ func (obj *RegistryServiceClient) Discover(service_name string) ([]string, error
 
 func (obj *RegistryServiceClient) Register(service_name string, service_address string) error {
 	c, closeFunc, _ := obj.Connect()
-	defer closeFunc()
 
+	defer closeFunc()
+	log.Printf("RegisrtyServiceClient")
 	_, err := c.Register(context.Background(), &service.ServiceRequest{Name: service_name, Address: service_address})
 
 	if err != nil {

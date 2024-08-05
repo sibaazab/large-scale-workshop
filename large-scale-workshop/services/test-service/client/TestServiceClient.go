@@ -3,11 +3,12 @@ package TestService
 import (
 	context "context"
 	"fmt"
+	//"log"
 
 	//"log"
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	service "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
-	"google.golang.org/grpc"
+	//"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -16,17 +17,19 @@ type TestServiceClient struct {
 	services.ServiceClientBase[service.TestServiceClient]
 }
 
-func NewTestServiceClient(address string) *TestServiceClient {
-	return &TestServiceClient{
+func NewTestServiceClient() *TestServiceClient {
+	client:= &TestServiceClient{
 		ServiceClientBase: services.ServiceClientBase[service.TestServiceClient]{
-			RegistryAddresses: []string{address},
-			CreateClient: func(conn grpc.ClientConnInterface) service.TestServiceClient {
-				return service.NewTestServiceClient(conn)
-			},
+			//RegistryAddresses: []string{address},
+			CreateClient:  service.NewTestServiceClient,
 			ServiceName: "TestService",
 		},
 	}
+
+	client.ServiceClientBase.LoadRegistryAddresses()
+	return client
 }
+
 func (obj *TestServiceClient) HelloWorld() (string, error) {
 	c, closeFunc, err := obj.Connect()
 	if err != nil {

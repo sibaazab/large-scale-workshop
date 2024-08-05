@@ -1,2 +1,2 @@
 type: "RegistryService"
-registery_addresses:
+listenPort: 8502

@@ -26,6 +26,7 @@ const (
 	RegistryService_Discover_FullMethodName   = "/registryservice.RegistryService/Discover"
 )
 
+
 // RegistryServiceClient is the client API for RegistryService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
