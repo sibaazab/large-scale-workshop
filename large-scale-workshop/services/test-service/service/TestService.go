@@ -4,23 +4,27 @@ import (
 	"log"
 	//"net"
 	"context"
-	//"fmt"
+	"fmt"
+
 	//"sync"
-    //"time"
-	
+	//"time"
+
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	. "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
+
 
 	//. "github.com/sibaazab/large-scale-workshop.git/utils"
 	"github.com/sibaazab/large-scale-workshop.git/services/test-service/servant"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"google.golang.org/protobuf/proto"
 ) 
 type testServiceImplementation struct{ 
     UnimplementedTestServiceServer 
 } 
 func Start(configData []byte) error { 
+	
     bindgRPCToService := func(s grpc.ServiceRegistrar) { 
         RegisterTestServiceServer(s, &testServiceImplementation{})
     }
@@ -54,8 +58,13 @@ func (obj *testServiceImplementation) Store(ctxt context.Context,kv *StoreKeyVal
 
 func (c *testServiceImplementation) Get(ctxt context.Context,in *wrapperspb.StringValue) (res *wrapperspb.StringValue,err error){
 	key := in.GetValue()
+	value, err := TestServiceServant.Get(key)
+	if err != nil {
+		log.Printf("error in test service get")
+		return nil, err
+	}
 	//value:= servant.cacheMap[key]
-	return wrapperspb.String(TestServiceServant.Get(key)),nil
+	return wrapperspb.String(value),nil
 }
 
 func (c *testServiceImplementation) IsAlive(ctxt context.Context, _ *emptypb.Empty) (res *wrapperspb.BoolValue,err error){
@@ -71,4 +80,26 @@ func (testServiceImplementation) ExtractLinksFromURL(ctxt context.Context, param
 	log.Printf("the links array is ")
 	return &ExtractLinksFromURLReturnedValue{Links: linksArr}, nil
 }
+
+
+
+var serviceInstance *testServiceImplementation
+ 
+func messageHandler(method string, parameters []byte) (response proto.Message, err error) {
+ 	switch method {
+	case "ExtractLinksFromURL":
+ 		p := &ExtractLinksFromURLParameters{}
+ 		err := proto.Unmarshal(parameters, p)
+ 		if err != nil {
+ 			return nil, err
+ 		} 
+ 		res, err := serviceInstance.ExtractLinksFromURL(context.Background(), p)
+		 if err != nil {
+ 			return nil, err
+ 		} 
+ 		return res, nil
+	default:
+ 		return nil, fmt.Errorf("MQ message called unknown method: %v", method)
+ 	} 
+} 
 

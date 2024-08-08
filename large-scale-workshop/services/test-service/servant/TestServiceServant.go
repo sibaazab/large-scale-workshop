@@ -9,6 +9,7 @@ import (
 	metaffi "github.com/MetaFFI/lang-plugin-go/api"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"github.com/sibaazab/large-scale-workshop.git/utils"
+	CacheServiceClient "github.com/sibaazab/large-scale-workshop.git/services/cache-service/client"
 )
 
 var pythonRuntime *metaffi.MetaFFIRuntime
@@ -59,14 +60,22 @@ func WaitAndRand(seconds int32, sendToClient func(x int32) error) error {
 	return sendToClient(int32(rand.Intn(10)))
 }
 
-func Get(key string) string {
-	value := cacheMap[key]
-	return value
+func Get(key string) (string, error) {
+	c := CacheServiceClient.NewCacheServiceClient()
+	value, err := c.Get(key)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get from cache: %v", err)
+	}
+	return value, nil
 }
 
-func Store(key string, value string) {
-	cacheMap[key] = value
-	return 
+func Store(key string, value string) error {
+	c := CacheServiceClient.NewCacheServiceClient()
+	err := c.Set(key, value)
+	if err != nil {
+		return fmt.Errorf("Failed to store in cache: %v", err)
+	}
+	return nil
 }
 
 func IsAlive() bool {

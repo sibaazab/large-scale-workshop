@@ -5,16 +5,19 @@ import (
 	"log"
 	"net"
 
-	//"fmt"
+	"fmt"
 	//"sync"
 	//"time"
 	. "github.com/sibaazab/large-scale-workshop.git/services/registry-service/common"
+	"gopkg.in/yaml.v2"
 	//RegistryServiceServant "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant"
 	servant "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	//. "github.com/sibaazab/large-scale-workshop.git/utils"
+
+	. "github.com/sibaazab/large-scale-workshop.git/utils"
+	"github.com/sibaazab/large-scale-workshop.git/Config"
 )
 
 //var Logger = log.Default()
@@ -29,10 +32,26 @@ func init() {
 
 func Start(configData []byte) error {
 
-	lis, err := net.Listen("tcp", ":8502")
+	var Config Config.RegistryConfigBase
+	err := yaml.Unmarshal(configData, &Config)
+
 	if err != nil {
-		log.Fatalf("failed to listen(ServiceBase): %v", err)
+		Logger.Fatalf("error unmarshaling data: %v", err)
 		return err
+	}
+
+	basePort := Config.ListenPort
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", basePort))
+	if err != nil {
+		// If the base port is unavailable, incrementally try the next ports
+		for i := 1; ; i++ {
+			listenPort := basePort + i
+			lis, err = net.Listen("tcp", fmt.Sprintf(":%d", listenPort))
+			if err == nil {
+				break
+			}
+		}
 	}
 
 	assignedPort := lis.Addr().(*net.TCPAddr).Port
