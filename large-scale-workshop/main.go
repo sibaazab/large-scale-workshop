@@ -1,12 +1,15 @@
-package main 
-import (     
+package main
+
+import (
+	"log"
 	"os"
-	"log"     
-	"github.com/sibaazab/large-scale-workshop.git/Config"     
-	"github.com/sibaazab/large-scale-workshop.git/utils"     
-	"gopkg.in/yaml.v2" 
-	TestService "github.com/sibaazab/large-scale-workshop.git/services/test-service/service"
+
+	"github.com/sibaazab/large-scale-workshop.git/Config"
+	CacheService "github.com/sibaazab/large-scale-workshop.git/services/cache-service/service"
 	RegistryService "github.com/sibaazab/large-scale-workshop.git/services/registry-service/service"
+	TestService "github.com/sibaazab/large-scale-workshop.git/services/test-service/service"
+	"github.com/sibaazab/large-scale-workshop.git/utils"
+	"gopkg.in/yaml.v2"
 )
 
 //hello
@@ -34,6 +37,9 @@ import (
 			case "RegistryService":
 				utils.Logger.Printf("Loading Registry Service: %v\n", config.Type)
 				RegistryService.Start(configData)
+			case "CacheService":
+				utils.Logger.Printf("Loading Cache Service: %v\n", config.Type)
+				CacheService.Start(configData)
 			
 		default:
 				utils.Logger.Fatalf("Unknown configuration type: %v", config.Type)

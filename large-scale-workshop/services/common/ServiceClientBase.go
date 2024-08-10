@@ -12,9 +12,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	//"google.golang.org/grpc/credentials/insecure"
-	registeryClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
+	"github.com/pebbe/zmq4"
+	registryClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
 	//"google.golang.org/protobuf/types/known/wrapperspb"
-    "github.com/sibaazab/large-scale-workshop.git/Config"
+	"github.com/sibaazab/large-scale-workshop.git/Config"
 )
 
 type ServiceClientBase[client_t any] struct {
@@ -54,7 +55,7 @@ func (obj *ServiceClientBase[client_t]) LoadRegistryAddresses() {
 func (obj *ServiceClientBase[client_t]) pickNode() (string, error) {
 
     //nodes, err := registery_ser.Discover(context.Background(), wrapperspb.String(obj.ServiceName))
-	client:= registeryClient.NewRegistryServiceClient(obj.RegistryAddresses)
+	client:= registryClient.NewRegistryServiceClient(obj.RegistryAddresses)
     nodes, err := client.Discover(obj.ServiceName)
 	
 
@@ -82,4 +83,51 @@ func (obj *ServiceClientBase[client_t]) Connect() (res client_t, closeFunc func(
     }
     c := obj.CreateClient(conn)
     return c, func() { conn.Close() }, nil
+}
+
+
+
+func (obj *ServiceClientBase[client_t]) getMQNodes() ([]string, error) {
+	// In a real-world application, this would likely involve querying a service registry.
+	// For the purpose of this example, let's assume we have a method to get nodes from a registry.
+
+	// Mocking the discovery of MQ nodes
+	registryClient := registryClient.NewRegistryServiceClient([]string{"registryAddress"})
+	nodes, err := registryClient.Discover(obj.ServiceName + "MQ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover MQ nodes: %v", err)
+	}
+	if len(nodes) == 0 {
+		return nil, fmt.Errorf("no MQ nodes found for service: %v", obj.ServiceName)
+	}
+
+	return nodes, nil
+}
+
+
+
+func (obj *ServiceClientBase[client_t]) ConnectMQ() (socket *zmq4.Socket, err error) {
+	// Create a new ZeroMQ socket
+	socket, err = zmq4.NewSocket(zmq4.REQ) // REQ socket type for sending requests and receiving replies
+	if err != nil {
+		log.Fatalf("Failed to create a new zmq socket: %v", err)
+		return nil, err
+	}
+
+	// Get the list of MQ nodes to connect to
+	nodes, err := obj.getMQNodes()
+	if err != nil {
+		log.Fatalf("Failed to get MQ nodes: %v", err)
+		return nil, err
+	}
+
+	// Connect to each node
+	for _, node := range nodes {
+		err = socket.Connect(node)
+		if err != nil {
+			log.Printf("Failed to connect to node %v: %v\n", node, err)
+		}
+	}
+
+	return socket, nil
 }

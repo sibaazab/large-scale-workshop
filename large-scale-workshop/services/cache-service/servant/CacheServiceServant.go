@@ -2,6 +2,8 @@ package CacheServiceServant
 
 import (
 	//"context"
+	//"time"
+
 	//"log"
 	//"net"
 	"fmt"
@@ -9,15 +11,17 @@ import (
 
 	//"sync"
 	//"time"
-	Config "github.com/sibaazab/large-scale-workshop.git/config"
-	//common "github.com/sibaazab/large-scale-workshop.git/services/common"
+	Config "github.com/sibaazab/large-scale-workshop.git/Config"
+
+	//CacheService "github.com/sibaazab/large-scale-workshop.git/services/cache-service/common"
+	common "github.com/sibaazab/large-scale-workshop.git/services/common"
+	RegistryServiceClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
 	Chord "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant/dht"
 	"github.com/sibaazab/large-scale-workshop.git/utils"
 	"gopkg.in/yaml.v2"
-	RegistryServiceClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
 	//"google.golang.org/grpc"
 	//"google.golang.org/protobuf/types/known/emptypb"
-	//"google.golang.org/protobuf/types/known/wrapperspb"
+	//"google.golang.org/protobuf/types/known/wrappers"
 )
 
 var chord *Chord.Chord
@@ -68,8 +72,7 @@ func CreateChordFromConfig(port int) (*Chord.Chord, error) {
 
 	// Attempt to join an existing Chord ring
 	for _, node := range serviceNodes {
-		c := common.NewServiceClientBaseDirect(node)
-		isRoot, err := c.IsRoot()
+		isRoot, err := common.IsRoot(node)
 		if err != nil {
 			utils.Logger.Fatalf("Error checking if node is root: %v", err)
 			return nil, fmt.Errorf("error checking if node is root: %w", err)
@@ -87,6 +90,8 @@ func CreateChordFromConfig(port int) (*Chord.Chord, error) {
 	// No root node found; this should not happen
 	return nil, fmt.Errorf("could not find a root node to join")
 }
+
+
 
 func Get(key string) (string, error) {
 	// Retrieve all keys

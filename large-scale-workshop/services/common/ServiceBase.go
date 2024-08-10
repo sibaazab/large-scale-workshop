@@ -14,11 +14,11 @@ import (
 	"github.com/sibaazab/large-scale-workshop.git/Config"
 	. "github.com/sibaazab/large-scale-workshop.git/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 
-func startgRPC() (listeningAddress string, grpcServer *grpc.Server,
-	startListening func(), assignedPort int) {
+func startgRPC() (listeningAddress string, grpcServer *grpc.Server, startListening func(), assignedPort int,) {
 	lis, err := net.Listen("tcp", ":0")
 	assignedPort = lis.Addr().(*net.TCPAddr).Port
 	//lis, err := net.Listen("tcp", fmt.Sprintf(":%v", listenPort))
@@ -68,8 +68,9 @@ func registerAddress(serviceName string, registryAddresses []string, listeningAd
     	registryClient.Unregister(serviceName, listeningAddress) }
     }
 
-func Start(serviceName string, bindgRPCToService func(s grpc.ServiceRegistrar)) (int, func()) {
+func Start(serviceName string, port int, bindgRPCToService func(s grpc.ServiceRegistrar), messageHandler func(method string, parameters []byte) (response proto.Message, err error)) (func(), int, func()) {
 	listeningAddress, grpcServer, startListening, assignedPort := startgRPC()
+	startMQ, listeningAddressAsync := bindMQToService(0, messageHandler)
 	bindgRPCToService(grpcServer)
 	
 	
@@ -80,7 +81,7 @@ func Start(serviceName string, bindgRPCToService func(s grpc.ServiceRegistrar)) 
 	log.Printf("TestService listening on Address %v", listeningAddress)
 	startListening()
 	log.Print("After startlistening")
-	return  assignedPort, unregister
+	return  startListening, port, unregister
 }
 
 
@@ -118,12 +119,63 @@ func bindMQToService(listenPort int, messageHandler func(method string, paramete
 			}
 			Logger.Printf("data len: %v\n", len(data))
 
-			go func() {
 
-
-			}
+			go func(data []byte) {
+				var responseMessage ReturnValue
+	
+				// Unmarshal the received data into CallParameters
+				callParams := &CallParameters{}
+				unmarshalErr := proto.Unmarshal(data, callParams)
+				if err != nil {
+					Logger.Printf("Failed to unmarshal data: %v\n", unmarshalErr)
+					responseMessage.Error = unmarshalErr.Error()
+					sendResponse(socket, &responseMessage)
+					return
+				}
+	
+				// Handle the message using messageHandler
+				handlerRes, handlerErr := messageHandler(callParams.Method, callParams.Data)
+	
+				if handlerErr != nil {
+					Logger.Printf("Error in messageHandler: %v\n", handlerErr)
+					responseMessage.Error = handlerErr.Error()
+				}
+	
+				// Marshal the response message if available
+				if handlerRes != nil {
+					marshalData, marshalErr := proto.Marshal(handlerRes)
+					if marshalErr != nil {
+						Logger.Printf("Failed to marshal response: %v\n", marshalErr)
+						responseMessage.Error = marshalErr.Error()
+					} else {
+						responseMessage.Data = marshalData
+					}
+				}
+	
+				// Send the response back to the client
+				sendErr := sendResponse(socket, &responseMessage)
+				if sendErr != nil {
+					Logger.Printf("Failed to send response: %v\n", sendErr)
+				}
+			}(data)
 		}
 
-
 	}
+	return startMQ, listeningAddress
+}
+
+// Helper function to send a response through the socket
+func sendResponse(socket *zmq4.Socket, responseMessage *ReturnValue) error {
+	res, err := proto.Marshal(responseMessage)
+	if err != nil {
+		Logger.Printf("Failed to marshal responseMessage: %v\n", err)
+		return err
+	}
+
+	if _, err := socket.SendBytes(res, 0); err != nil {
+		Logger.Printf("Failed to send responseMessage: %v\n", err)
+		return err
+	}
+
+	return nil
 }

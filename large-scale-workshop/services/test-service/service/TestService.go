@@ -9,29 +9,35 @@ import (
 	//"sync"
 	//"time"
 
+	//"github.com/pebbe/zmq4"
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	. "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
-
 
 	//. "github.com/sibaazab/large-scale-workshop.git/utils"
 	"github.com/sibaazab/large-scale-workshop.git/services/test-service/servant"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"google.golang.org/protobuf/proto"
 ) 
 type testServiceImplementation struct{ 
     UnimplementedTestServiceServer 
 } 
+
 func Start(configData []byte) error { 
 	
     bindgRPCToService := func(s grpc.ServiceRegistrar) { 
         RegisterTestServiceServer(s, &testServiceImplementation{})
     }
-    assignedPort,_ :=services.Start("TestService" , bindgRPCToService) 
-	log.Printf("TestService listening on port %d", assignedPort)
+    startListening, Port, unregister  :=services.Start("TestService",0, bindgRPCToService, messageHandler) 
+	log.Printf("TestService listening on port %d", Port)
+	defer unregister()
+	startListening()
     return nil
 }
+
+
+
 
 func (obj *testServiceImplementation) HelloWorld(ctxt context.Context,_ *emptypb.Empty) (res *wrapperspb.StringValue,err error) {
     return wrapperspb.String(TestServiceServant.HelloWorld()),nil }
@@ -52,8 +58,8 @@ func (obj *testServiceImplementation) Store(ctxt context.Context,kv *StoreKeyVal
 	key :=kv.GetKey()
 	value := kv.GetValue()
 	//servant.cacheMap[key]=vlaue
-	TestServiceServant.Store(key, value)
-	return
+	err = TestServiceServant.Store(key, value)
+	return &emptypb.Empty{}, err
 }
 
 func (c *testServiceImplementation) Get(ctxt context.Context,in *wrapperspb.StringValue) (res *wrapperspb.StringValue,err error){
@@ -83,23 +89,105 @@ func (testServiceImplementation) ExtractLinksFromURL(ctxt context.Context, param
 
 
 
+
+
 var serviceInstance *testServiceImplementation
  
+func handleHelloWorld(ctx context.Context, params []byte) (proto.Message, error) {
+	return serviceInstance.HelloWorld(ctx, &emptypb.Empty{})
+}
+
+func handleHelloToUser(ctx context.Context, params []byte) (proto.Message, error) {
+	in := &wrapperspb.StringValue{}
+	if err := proto.Unmarshal(params, in); err != nil {
+		return nil, err
+	}
+	return serviceInstance.HelloToUser(ctx, in)
+}
+
+// func handleWaitAndRand(ctx context.Context, params []byte, socket *zmq4.Socket) error {
+// 	in := &wrapperspb.Int32Value{}
+// 	if err := proto.Unmarshal(params, in); err != nil {
+// 		return err
+// 	}
+
+// 	// Define a client function to send each result as a separate message
+// 	streamClient := func(x int32) error {
+// 		// Convert the result to a protobuf message
+// 		resultWrapper := &wrapperspb.Int32Value{Value: x}
+// 		resultData, err := proto.Marshal(resultWrapper)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to marshal result: %v", err)
+// 		}
+
+// 		// Send the result through the ZeroMQ socket
+// 		if _, err := socket.SendBytes(resultData, 0); err != nil {
+// 			return fmt.Errorf("failed to send result: %v", err)
+// 		}
+
+// 		return nil
+// 	}
+
+// 	// Call the original WaitAndRand function, passing the custom streamClient
+// 	if err := TestServiceServant.WaitAndRand(in.GetValue(), streamClient); err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+func handleStore(ctx context.Context, params []byte) (proto.Message, error) {
+	in := &StoreKeyValue{}
+	if err := proto.Unmarshal(params, in); err != nil {
+		return nil, err
+	}
+	_, err := serviceInstance.Store(ctx, in)
+	return nil, err
+}
+
+func handleGet(ctx context.Context, params []byte) (proto.Message, error) {
+	in := &wrapperspb.StringValue{}
+	if err := proto.Unmarshal(params, in); err != nil {
+		return nil, err
+	}
+	return serviceInstance.Get(ctx, in)
+}
+
+func handleIsAlive(ctx context.Context, params []byte) (proto.Message, error) {
+	return serviceInstance.IsAlive(ctx, &emptypb.Empty{})
+}
+
+func handleExtractLinksFromURL(ctx context.Context, params []byte) (proto.Message, error) {
+	in := &ExtractLinksFromURLParameters{}
+	if err := proto.Unmarshal(params, in); err != nil {
+		return nil, err
+	}
+	return serviceInstance.ExtractLinksFromURL(ctx, in)
+}
+
 func messageHandler(method string, parameters []byte) (response proto.Message, err error) {
- 	switch method {
+	switch method {
+	case "HelloWorld":
+		return handleHelloWorld(context.Background(), parameters)
+	case "HelloToUser":
+		return handleHelloToUser(context.Background(), parameters)
+	// case "WaitAndRand":
+	// 	// Handle streaming case
+	// 	if err := handleWaitAndRand(context.Background(), parameters, socket); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	// Return nil because the response is sent within handleWaitAndRand
+	// 	return nil, nil
+	case "Store":
+		return handleStore(context.Background(), parameters)
+	case "Get":
+		return handleGet(context.Background(), parameters)
+	case "IsAlive":
+		return handleIsAlive(context.Background(), parameters)
 	case "ExtractLinksFromURL":
- 		p := &ExtractLinksFromURLParameters{}
- 		err := proto.Unmarshal(parameters, p)
- 		if err != nil {
- 			return nil, err
- 		} 
- 		res, err := serviceInstance.ExtractLinksFromURL(context.Background(), p)
-		 if err != nil {
- 			return nil, err
- 		} 
- 		return res, nil
+		return handleExtractLinksFromURL(context.Background(), parameters)
 	default:
- 		return nil, fmt.Errorf("MQ message called unknown method: %v", method)
- 	} 
-} 
+		return nil, fmt.Errorf("unknown method: %v", method)
+	}
+}
 
