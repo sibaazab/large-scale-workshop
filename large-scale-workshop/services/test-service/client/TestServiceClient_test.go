@@ -129,3 +129,140 @@ func TestExtractLinksFromURL(t *testing.T) {
 	}
 	t.Logf("Response: %v", res)
 }
+
+
+
+
+func TestHelloWorldAsync(t *testing.T) {
+	c := NewTestServiceClient()
+	r, err := c.HelloWorldAsync()
+	if err != nil {
+		t.Fatalf("could not call HelloWorld: %v", err)
+		return
+	} 
+	res, err := r()
+	if err != nil {
+		t.Fatalf("HelloWorld returned error : %v", err)
+		return
+	} 
+	t.Logf("Response: %v", res)
+   } 
+   
+   func TestHelloToUserAsync(t *testing.T) {
+	c := NewTestServiceClient()
+	r, err := c.HelloToUserAsync(username)
+	if err != nil {
+		t.Fatalf("could not start HelloToUserAsync: %v", err)
+		return
+	}
+
+	// Call the returned function to get the result
+	res, err := r()
+	if err != nil {
+		t.Fatalf("HelloToUserAsync returned error: %v", err)
+		return
+	}
+
+	// Log the response
+	t.Logf("Response: %v", res)
+}
+
+func TestWaitAndRandAsync(t *testing.T) {
+    c := NewTestServiceClient()
+    r, err := c.WaitAndRandAsync(10)
+    if err != nil {
+        t.Fatalf("could not start WaitAndRandAsync: %v", err)
+        return
+    }
+
+    // Call the returned function to get the result
+    res, err := r()
+    if err != nil {
+        t.Fatalf("WaitAndRandAsync returned error: %v", err)
+        return
+    }
+
+    // Log the response
+    t.Logf("Response: %v", res)
+}
+
+func TestGetAsync(t *testing.T) {
+	c := NewTestServiceClient()
+	r, err := c.GetAsync(keyGet)
+	if err != nil {
+		t.Fatalf("could not start GetAsync: %v", err)
+		return
+	}
+
+	// Call the returned function to get the result
+	res, err := r()
+	if err != nil {
+		t.Fatalf("GetAsync returned error: %v", err)
+		return
+	}
+
+	// Log the response
+	t.Logf("Response: %v", res)
+}
+
+
+func TestStoreAsync(t *testing.T) {
+	c := NewTestServiceClient()
+	r, err := c.StoreAsync(keyStore, value)
+	if err != nil {
+		t.Fatalf("could not start StoreAsync: %v", err)
+		return
+	}
+
+	// Call the returned function to execute the store operation
+	err = r()
+	if err != nil {
+		t.Fatalf("StoreAsync returned error: %v", err)
+		return
+	}
+
+	// Log success message
+	t.Log("Successfully stored the key-value pair")
+}
+
+
+func TestIsAliveAsync(t *testing.T) {
+	c := NewTestServiceClient()
+	r, err := c.IsAliveAsync()
+	if err != nil {
+		t.Fatalf("could not start IsAliveAsync: %v", err)
+		return
+	}
+
+	// Call the returned function to get the result
+	res, err := r()
+	if err != nil {
+		t.Fatalf("IsAliveAsync returned error: %v", err)
+		return
+	}
+
+	// Log the response
+	t.Logf("IsAlive response: %v", res)
+}
+
+func TestExtractLinksFromURLAsync(t *testing.T) {
+	c := NewTestServiceClient()
+
+	// Use the flag values
+	Depth32 = int32(Depth)
+	r, err := c.ExtractLinksFromURLAsync(Url, Depth32)
+	if err != nil {
+		t.Fatalf("could not start ExtractLinksFromURLAsync: %v", err)
+		return
+	}
+
+	// Call the returned function to get the result
+	res, err := r()
+	if err != nil {
+		t.Fatalf("ExtractLinksFromURLAsync returned error: %v", err)
+		return
+	}
+
+	// Log the response
+	t.Logf("Extracted links: %v", res)
+}

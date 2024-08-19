@@ -2,6 +2,7 @@ package common
 
 import (
 	//"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -14,8 +15,10 @@ import (
 	//"google.golang.org/grpc/credentials/insecure"
 	"github.com/pebbe/zmq4"
 	registryClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
+
 	//"google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/sibaazab/large-scale-workshop.git/Config"
+	"google.golang.org/protobuf/proto"
 )
 
 type ServiceClientBase[client_t any] struct {
@@ -130,4 +133,31 @@ func (obj *ServiceClientBase[client_t]) ConnectMQ() (socket *zmq4.Socket, err er
 	}
 
 	return socket, nil
+}
+
+
+// MarshaledCallParameter is a structure representing the marshaled call parameters.
+type MarshaledCallParameter struct {
+    Method string
+    Data   []byte
+}
+
+// NewMarshaledCallParameter creates a new MarshaledCallParameter by serializing the given method and message.
+func NewMarshaledCallParameter(method string, msg proto.Message) (*MarshaledCallParameter, error) {
+    // Check if method is valid
+    if method == "" {
+        return nil, errors.New("method name cannot be empty")
+    }
+    
+    // Serialize the message to a byte slice
+    data, err := proto.Marshal(msg)
+    if err != nil {
+        return nil, err
+    }
+    
+    // Create and return the MarshaledCallParameter
+    return &MarshaledCallParameter{
+        Method: method,
+        Data:   data,
+    }, nil
 }

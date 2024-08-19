@@ -29,7 +29,7 @@ func Start(configData []byte) error {
     bindgRPCToService := func(s grpc.ServiceRegistrar) { 
         RegisterTestServiceServer(s, &testServiceImplementation{})
     }
-    startListening, Port, unregister  :=services.Start("TestService",0, bindgRPCToService, messageHandler) 
+    startListening, unregister, Port, _ := services.Start("TestService",0, bindgRPCToService, messageHandler) 
 	log.Printf("TestService listening on port %d", Port)
 	defer unregister()
 	startListening()

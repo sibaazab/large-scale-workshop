@@ -11,12 +11,20 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+type CacheServiceBase struct {
+	Address string
+}
+func NewCacheServiceBase(address string) *CacheServiceBase {
+	return &CacheServiceBase{Address: address}
+}
+
+
 // IsAlive checks if the service is alive by invoking the IsAlive gRPC method.
-func IsAlive(address, serviceName string) (bool, error) {
+func (obj *CacheServiceBase)IsAlive(serviceName string) (bool, error) {
 	fullMethodName := fmt.Sprintf("/%s.%s/IsAlive", strings.ToLower(serviceName), serviceName)
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(time.Second*5))
+	conn, err := grpc.Dial(obj.Address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(time.Second*5))
 	if err != nil {
-		return false, fmt.Errorf("failed to connect to %v: %v", address, err)
+		return false, fmt.Errorf("failed to connect to %v: %v", obj.Address, err)
 	}
 	defer conn.Close()
 

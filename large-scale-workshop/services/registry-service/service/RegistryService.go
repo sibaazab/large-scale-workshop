@@ -61,9 +61,9 @@ func helperStart(baseGrpcListenPort int, grpcListenPort int, bindgRPCToService f
 		return err
 	}
 
-	// if grpcListenPort == baseGrpcListenPort {
-	// 	go RegistryServiceServant.CheckIsAliveEvery10Seconds()
-	// }
+	if grpcListenPort == baseGrpcListenPort {
+		go RegistryServiceServant.CheckIsAlive()
+	}
 
 	startListening()
 	return nil

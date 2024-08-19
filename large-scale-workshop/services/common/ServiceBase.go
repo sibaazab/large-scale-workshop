@@ -68,7 +68,35 @@ func registerAddress(serviceName string, registryAddresses []string, listeningAd
     	registryClient.Unregister(serviceName, listeningAddress) }
     }
 
-func Start(serviceName string, port int, bindgRPCToService func(s grpc.ServiceRegistrar), messageHandler func(method string, parameters []byte) (response proto.Message, err error)) (func(), int, func()) {
+
+func StartCache(serviceName string, grpcListenPort int, bindgRPCToService func(grpc.ServiceRegistrar)) (startListening func(), unregister func(), portNum int) {
+	listeningAddressNonAsync, grpcServer, startListening, port := startgRPC()
+	bindgRPCToService(grpcServer)
+	unregisterFunc := registerAddress(serviceName, LoadRegistryAddresses(), listeningAddressNonAsync)
+
+	return startListening, unregisterFunc, port
+}
+
+func Start(serviceName string, grpcListenPort int, bindgRPCToService func(grpc.ServiceRegistrar), messageHandler func(method string, parameters []byte) (response proto.Message, err error)) (startListening func(), unregister func(), portNum int, listeningAddressNonAsync string) {
+	listeningAddressNonAsync, grpcServer, startListening, port := startgRPC()
+	var listeningAddressAsync string
+	startMQ, listeningAddressAsync := bindMQToService(0, messageHandler)
+	bindgRPCToService(grpcServer)
+	unregisterFuncNonAsync := registerAddress(serviceName, LoadRegistryAddresses(), listeningAddressNonAsync)
+	unregisterFuncAsync := registerAddress(serviceName+"MQ", LoadRegistryAddresses(), listeningAddressAsync)
+	go func() {
+		if unregisterFuncAsync != nil {
+			defer unregisterFuncAsync()
+		}
+		if startMQ != nil {
+			startMQ()
+		}
+	}()
+	return startListening, unregisterFuncNonAsync, port, listeningAddressNonAsync
+}
+
+
+	/*func Start(serviceName string, port int, bindgRPCToService func(s grpc.ServiceRegistrar), messageHandler func(method string, parameters []byte) (response proto.Message, err error)) (func(), int, func()) {
 	listeningAddress, grpcServer, startListening, assignedPort := startgRPC()
 	startMQ, listeningAddressAsync := bindMQToService(0, messageHandler)
 	bindgRPCToService(grpcServer)
@@ -82,7 +110,7 @@ func Start(serviceName string, port int, bindgRPCToService func(s grpc.ServiceRe
 	startListening()
 	log.Print("After startlistening")
 	return  startListening, port, unregister
-}
+}*/
 
 
 
