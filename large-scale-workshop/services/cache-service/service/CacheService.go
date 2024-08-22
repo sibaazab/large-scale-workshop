@@ -21,9 +21,9 @@ type cacheServiceImplementation struct {
 func Start(configData []byte) error {
 	bindgRPCToService := func(s grpc.ServiceRegistrar) { RegisterCacheServiceServer(s, &cacheServiceImplementation{}) }
 	startListening, unregister, port:= common.StartCache("CacheService", 0, bindgRPCToService)
+	servant.CreateChordFromConfig(port)
 	defer unregister()
 	utils.Logger.Printf("CacheService server started on port: %v\n", port)
-	servant.CreateChordFromConfig(port)
 	startListening()
 	return nil
 }

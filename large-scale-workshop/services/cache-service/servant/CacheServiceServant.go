@@ -16,12 +16,10 @@ import (
 	//CacheService "github.com/sibaazab/large-scale-workshop.git/services/cache-service/common"
 	common "github.com/sibaazab/large-scale-workshop.git/services/common"
 	RegistryServiceClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
-	Chord "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant/dht"
+	Chord "github.com/sibaazab/large-scale-workshop.git/output/dht"
 	"github.com/sibaazab/large-scale-workshop.git/utils"
 	"gopkg.in/yaml.v2"
-	//"google.golang.org/grpc"
-	//"google.golang.org/protobuf/types/known/emptypb"
-	//"google.golang.org/protobuf/types/known/wrappers"
+
 )
 
 var chord *Chord.Chord
@@ -62,7 +60,7 @@ func CreateChordFromConfig(port int) (*Chord.Chord, error) {
 
 	// Initialize or join Chord ring
 	if len(serviceNodes) == 0 {
-		// No existing service nodes found; create a new Chord ring
+		
 		chord, err := Chord.NewChord(fmt.Sprintf(":%v", port), 1099)
 		if err != nil {
 			return nil, fmt.Errorf("error creating new chord: %w", err)
@@ -111,7 +109,7 @@ func Get(key string) (string, error) {
 	}
 
 	if !found {
-		return "", nil // Key not found
+		return "", nil 
 	}
 
 	// Retrieve the value associated with the key

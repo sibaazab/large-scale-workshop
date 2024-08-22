@@ -5,11 +5,11 @@ import (
 	"log"
 	"net"
 	"os"
+	//"time"
+    "github.com/cenkalti/backoff/v4"
 
 	RegistryServiceClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
-	//RegistryService "github.com/sibaazab/large-scale-workshop.git/services/registry-service/service"
 	"gopkg.in/yaml.v2"
-
 	"github.com/pebbe/zmq4"
 	"github.com/sibaazab/large-scale-workshop.git/Config"
 	. "github.com/sibaazab/large-scale-workshop.git/utils"
@@ -60,13 +60,29 @@ func LoadRegistryAddresses() []string {
 
 func registerAddress(serviceName string, registryAddresses []string, listeningAddress string) (unregister func()) {
     registryClient := RegistryServiceClient.NewRegistryServiceClient(registryAddresses)
-    err := registryClient.Register(serviceName, listeningAddress)
-    if err != nil {
-            Logger.Fatalf("Failed to register to registry service: %v", err)
+	log.Printf("--------------------------------------------------------------------registerAddress serviceName=%v", serviceName)
+	log.Printf("registerAddress registryAddresses=%v", registryAddresses)
+	log.Printf("registerAddress listeningAddress=%v", listeningAddress)
+
+
+	operation := func() error {
+        err := registryClient.Register(serviceName, listeningAddress)
+        if err != nil {
+            log.Printf("Retrying registration for service %v: %v", serviceName, err)
+            return err
         }
-    return func() {
-    	registryClient.Unregister(serviceName, listeningAddress) }
+        return nil
     }
+
+    err := backoff.Retry(operation, backoff.NewExponentialBackOff())
+    if err != nil {
+        Logger.Fatalf("Failed to register to registry service: %v", err)
+    }
+
+    return func() {
+        registryClient.Unregister(serviceName, listeningAddress)
+    }
+}
 
 
 func StartCache(serviceName string, grpcListenPort int, bindgRPCToService func(grpc.ServiceRegistrar)) (startListening func(), unregister func(), portNum int) {
@@ -94,24 +110,6 @@ func Start(serviceName string, grpcListenPort int, bindgRPCToService func(grpc.S
 	}()
 	return startListening, unregisterFuncNonAsync, port, listeningAddressNonAsync
 }
-
-
-	/*func Start(serviceName string, port int, bindgRPCToService func(s grpc.ServiceRegistrar), messageHandler func(method string, parameters []byte) (response proto.Message, err error)) (func(), int, func()) {
-	listeningAddress, grpcServer, startListening, assignedPort := startgRPC()
-	startMQ, listeningAddressAsync := bindMQToService(0, messageHandler)
-	bindgRPCToService(grpcServer)
-	
-	
-	unregister:= registerAddress(serviceName, LoadRegistryAddresses(), listeningAddress)
-	//RegistryService.services[serviceName][listeningAddress]= unregister
-	//go RegistryService.monitorNode(serviceName, listeningAddress)
-	log.Printf("TestService listening on port %d", assignedPort)
-	log.Printf("TestService listening on Address %v", listeningAddress)
-	startListening()
-	log.Print("After startlistening")
-	return  startListening, port, unregister
-}*/
-
 
 
 

@@ -15,10 +15,7 @@ import (
 	"github.com/sibaazab/large-scale-workshop.git/utils"
 
 	//registeryService "github.com/sibaazab/large-scale-workshop.git/services/registry-service/service"
-	//"google.golang.org/grpc"
-	//"google.golang.org/protobuf/types/known/emptypb"
-	//"google.golang.org/protobuf/types/known/wrapperspb"
-	Chord "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant/dht"
+	Chord "github.com/sibaazab/large-scale-workshop.git/output/dht"
 )
 
 
@@ -26,17 +23,17 @@ import (
 
 type RegistryServiceServant struct {
     mu       sync.Mutex
-	services map[string]map[string]int
+	//services map[string]map[string]int
 }
 
 var r *RegistryServiceServant
 var isAliveCheck map[string]int
 var chord *Chord.Chord
 
-func init() {
-	r = &RegistryServiceServant{services: make(map[string]map[string]int)}
-	log.Printf("map initialized- registery service")
-}
+// func init() {
+// 	r = &RegistryServiceServant{services: make(map[string]map[string]int)}
+// 	log.Printf("map initialized- registery service")
+// }
 
 func CreateChord(basePort, listenPort int) error {
 	var err   error
@@ -60,8 +57,7 @@ func CreateChord(basePort, listenPort int) error {
 		utils.Logger.Printf("Joined Chord ring on %s via %s", address, baseAddress)
 	}
 
-	// If needed, you could return the chord instance, or handle it differently
-	// return chord, nil
+
 	return nil
 }
 
@@ -69,8 +65,12 @@ func CreateChord(basePort, listenPort int) error {
 
 
 func Register(serviceName string, address string) error {
-	
+	 // Lockr.mu.Lock()  the mutex before modifying shared resources
+    //defer r.mu.Unlock()  // Ensure the mutex is unlocked when the function exits
+	log.Printf("we are in the servan registry-------------------")
+	CheckIfKeyInKeys(serviceName)
 	// Get the current addresses associated with the service
+	log.Printf("we are in the servan registry-------------------")
 	res, err := chord.Get(serviceName)
 	if err != nil {
 		return err
@@ -81,7 +81,6 @@ func Register(serviceName string, address string) error {
 	if res == "" {
 		addresses = []string{}
 	}
-
 	// Append the new address and update the DHT entry
 	addresses = append(addresses, address)
 	err = chord.Set(serviceName, strings.Join(addresses, ","))
@@ -96,11 +95,14 @@ func Register(serviceName string, address string) error {
 
 
 func Unregister(serviceName string, address string) error {
+	r.mu.Lock()  // Lock the mutex before modifying shared resources
+    defer r.mu.Unlock()  // Ensure the mutex is unlocked when the function exits
+
 	res, err := chord.Get(serviceName)
 	if err != nil {
 		return err
 	}
-
+	log.Printf("unrigester port =%v", address)
 	// Decode the result directly
 	addresses := strings.Split(res, ",")
 	if len(addresses) == 0 {
@@ -114,10 +116,10 @@ func Unregister(serviceName string, address string) error {
 			break
 		}
 	}
-
 	// Update or delete the entry in the DHT
 	if len(addresses) == 0 {
 		err = chord.Delete(serviceName)
+		log.Printf("service name deleted = %v", serviceName)
 	} else {
 		err = chord.Set(serviceName, strings.Join(addresses, ","))
 	}
@@ -149,15 +151,20 @@ func CheckIsAlive() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		go func() {
-			utils.Logger.Printf("Started IsAlive check\n")
-			CheckAllNodesStatus()
-		}()
+	
+		utils.Logger.Printf("Started IsAlive check\n")
+		CheckAllNodesStatus()
+		
 	}
 }
 
 func CheckIfKeyInKeys(key string) {
+	log.Printf("we are in checkifkeyinkeys=")
+	if chord==nil{
+		log.Printf("----------------!!! the chord in banic!!!!!")
+	}
 	keys, err := chord.GetAllKeys()
+	log.Printf("we are in checkifkeyinkeys= %v", keys)
 	if err != nil {
 		utils.Logger.Printf("Failed to get all keys: %v\n", err)
 		return
@@ -198,7 +205,12 @@ func DeleteByValue(slice []string, x ...string) []string {
 
 
 func CheckAllNodesStatus() {
+	r.mu.Lock()  // Lock the mutex before modifying shared resources
+    defer r.mu.Unlock()  // Ensure the mutex is unlocked when the function exits
+
+	log.Printf("-------------------seg- CheckAllNodesStatus in ????????????????")
 	services, err := chord.GetAllKeys()
+	
 	if err != nil {
 		utils.Logger.Printf("Failed to get all keys: %v\n", err)
 		return

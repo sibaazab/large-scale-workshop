@@ -7,36 +7,25 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"time"
+	//"time"
 
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 
-	//"google.golang.org/grpc/credentials/insecure"
 	"github.com/pebbe/zmq4"
 	registryClient "github.com/sibaazab/large-scale-workshop.git/services/registry-service/client"
-
-	//"google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/sibaazab/large-scale-workshop.git/Config"
 	"google.golang.org/protobuf/proto"
 )
 
 type ServiceClientBase[client_t any] struct {
-    RegistryAddresses []string
+    RegistryAddresses  []string
     CreateClient      func(grpc.ClientConnInterface) client_t
     ServiceName string
 }
 
-func NewServiceClientBase[client_t any](registryAddresses []string, createClient func(grpc.ClientConnInterface) client_t, serviceName string) *ServiceClientBase[client_t] {
-    return &ServiceClientBase[client_t]{
-        RegistryAddresses: registryAddresses,
-        CreateClient:      createClient,
-        ServiceName:      serviceName,
-    }
-}
-
 func (obj *ServiceClientBase[client_t]) LoadRegistryAddresses() {
-	configFile := "/workspaces/large-scale-workshop/services/common/RegistryAddresses.yaml"
+	configFile := "github.com/sibaazab/large-scale-workshop.git/services/common/RegistryAddresses.yaml"
 	configData, err := os.ReadFile(configFile)
 	if err != nil {
 		log.Fatalf("error reading registry yaml file: %v", err)
@@ -55,25 +44,29 @@ func (obj *ServiceClientBase[client_t]) LoadRegistryAddresses() {
 	obj.RegistryAddresses = config.RegistryAddresses
 }
 
-func (obj *ServiceClientBase[client_t]) pickNode() (string, error) {
+func pickNode(nodes []string) (string, error) {
 
-    //nodes, err := registery_ser.Discover(context.Background(), wrapperspb.String(obj.ServiceName))
-	client:= registryClient.NewRegistryServiceClient(obj.RegistryAddresses)
-    nodes, err := client.Discover(obj.ServiceName)
-	
-
-	if err != nil {
-        return "", err
-    }
-
-    rand.Seed(time.Now().UnixNano())
+	log.Printf("nodes= %v", nodes)
     index := rand.Intn(len(nodes))
 	log.Printf("%v", nodes[index])
     return nodes[index], nil
 }
 
 func (obj *ServiceClientBase[client_t]) Connect() (res client_t, closeFunc func(), err error) {
-    nodeAddress, err := obj.pickNode()
+
+	client:= registryClient.NewRegistryServiceClient(obj.RegistryAddresses)
+    nodes, err := client.Discover(obj.ServiceName)
+	log.Printf("5555555555555555555555555555555555555555555555555")
+	
+
+	if err != nil {
+		var empty client_t
+        return empty,nil, err
+    }
+
+    nodeAddress, err := pickNode(nodes)
+	log.Printf("5555555555555555555555555555555555555555555555555")
+
     if err != nil {
         var empty client_t
         return empty, nil, fmt.Errorf("failed to pick node: %v", err)
@@ -91,10 +84,6 @@ func (obj *ServiceClientBase[client_t]) Connect() (res client_t, closeFunc func(
 
 
 func (obj *ServiceClientBase[client_t]) getMQNodes() ([]string, error) {
-	// In a real-world application, this would likely involve querying a service registry.
-	// For the purpose of this example, let's assume we have a method to get nodes from a registry.
-
-	// Mocking the discovery of MQ nodes
 	registryClient := registryClient.NewRegistryServiceClient([]string{"registryAddress"})
 	nodes, err := registryClient.Discover(obj.ServiceName + "MQ")
 	if err != nil {

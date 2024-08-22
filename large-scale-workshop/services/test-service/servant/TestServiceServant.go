@@ -16,11 +16,10 @@ var pythonRuntime *metaffi.MetaFFIRuntime
 var crawlerModule *metaffi.MetaFFIModule
 var extract_links_from_url func(...interface{}) ([]interface{}, error)
 
-var cacheMap map[string]string
+// var cacheMap map[string]string
 
 func init() {
-	cacheMap = make(map[string]string)
-	log.Printf("map initialized sdfs")
+
 
 	pythonRuntime = metaffi.NewMetaFFIRuntime("python311")
 	err := pythonRuntime.LoadRuntimePlugin()
@@ -30,7 +29,7 @@ func init() {
 		panic(msg)
 	}
 	// Load the Crawler module
-	crawlerModule, err = pythonRuntime.LoadModule("/workspaces/large-scale-workshop/services/test-service/servant/crawler.py")
+	crawlerModule, err = pythonRuntime.LoadModule("github.com/sibaazab/large-scale-workshop.git/services/test-service/servant/crawler.py")
 	if err != nil {
 		msg := fmt.Sprintf("Failed to load ./crawler/crawler.py module: %v", err)
 		utils.Logger.Fatalf(msg)
@@ -64,7 +63,7 @@ func Get(key string) (string, error) {
 	c := CacheServiceClient.NewCacheServiceClient()
 	value, err := c.Get(key)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get from cache: %v", err)
+		return "", fmt.Errorf("failed to get from cache: %v", err)
 	}
 	return value, nil
 }
@@ -73,7 +72,7 @@ func Store(key string, value string) error {
 	c := CacheServiceClient.NewCacheServiceClient()
 	err := c.Set(key, value)
 	if err != nil {
-		return fmt.Errorf("Failed to store in cache: %v", err)
+		return fmt.Errorf("failed to store in cache: %v", err)
 	}
 	return nil
 }
@@ -90,7 +89,7 @@ func ExtractLinksFromURL(url string, depth int32) ([]string, error) {
 		return nil, err
 	}
 	if depth == 0 {
-		//empty_lst:= make([]string, 0,0)
+	
 
 		lst := make([]string, 0, 1)
 		lst = append(lst, url)

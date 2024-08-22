@@ -1,22 +1,23 @@
-package ResgistryService
+package RegistryService
 
 import (
 	"context"
-	"net"
+	"log"
+	//"net"
 
-	"fmt"
+	//"fmt"
 	//"sync"
 	//"time"
+	commonRegistry "github.com/sibaazab/large-scale-workshop.git/services/commonRegistry"
 	. "github.com/sibaazab/large-scale-workshop.git/services/registry-service/common"
-	"gopkg.in/yaml.v2"
 	RegistryServiceServant "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant"
-	servant "github.com/sibaazab/large-scale-workshop.git/services/registry-service/servant"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"gopkg.in/yaml.v2"
 
-	. "github.com/sibaazab/large-scale-workshop.git/utils"
 	"github.com/sibaazab/large-scale-workshop.git/Config"
+	. "github.com/sibaazab/large-scale-workshop.git/utils"
 )
 
 
@@ -24,53 +25,12 @@ type registeryServiceImplementation struct {
 	UnimplementedRegistryServiceServer
 }
 
-// startgRPC initializes and starts the gRPC server.
-func startgRPC(listenPort int) (string, *grpc.Server, func(), error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", listenPort))
-	if err != nil {
-		Logger.Printf("Failed to listen on port %v: %v", listenPort, err)
-		return "", nil, nil, err
-	}
-
-	listeningAddress := lis.Addr().String()
-	grpcServer := grpc.NewServer()
-
-	startListening := func() {
-		Logger.Printf("Starting gRPC server on %s", listeningAddress)
-		if err := grpcServer.Serve(lis); err != nil {
-			Logger.Fatalf("Failed to serve gRPC: %v", err)
-		}
-	}
-
-	return listeningAddress, grpcServer, startListening, nil
-}
-
-// StartServer sets up and starts the server with gRPC.
-func helperStart(baseGrpcListenPort int, grpcListenPort int, bindgRPCToService func(grpc.ServiceRegistrar)) error {
-	listeningAddress, grpcServer, startListening, err := startgRPC(grpcListenPort)
-	if err != nil {
-		return err
-	}
-
-	bindgRPCToService(grpcServer)
-	Logger.Printf("RegistryService started at port %v, listening on %s", grpcListenPort, listeningAddress)
-
-	// Create chord and check alive logic
-	if err := RegistryServiceServant.CreateChord(baseGrpcListenPort, grpcListenPort); err != nil {
-		Logger.Printf("Error creating chord: %v", err)
-		return err
-	}
-
-	if grpcListenPort == baseGrpcListenPort {
-		go RegistryServiceServant.CheckIsAlive()
-	}
-
-	startListening()
-	return nil
-}
 
 // Start initializes the server using configuration data and attempts to start it.
 func Start(configData []byte) error {
+	bindgRPCToService := func(s grpc.ServiceRegistrar) { 
+        RegisterRegistryServiceServer(s, &registeryServiceImplementation{})
+    }
 	var config Config.RegistryConfigBase
 	if err := yaml.Unmarshal(configData, &config); err != nil {
 		Logger.Fatalf("Error unmarshaling configuration data: %v", err)
@@ -78,44 +38,51 @@ func Start(configData []byte) error {
 	}
 
 	baseListenPort := config.ListenPort
-	var startError error
-
-	for i := 0; ; i++ {
-		listenPort := baseListenPort + i
-		if err := helperStart(baseListenPort, listenPort, func(s grpc.ServiceRegistrar) {
-			RegisterRegistryServiceServer(s, &registeryServiceImplementation{})
-		}); 
-		err == nil {
-			break
-		} else {
-			startError = err
-			Logger.Printf("Error starting server on port %v: %v", listenPort, err)
-		}
+	log.Printf("----------------baselistenPort=%v", baseListenPort)
+    startListening, listenPort, err := commonRegistry.Start(baseListenPort, bindgRPCToService)
+	if err != nil {
+		Logger.Printf("Failed to start the Registry service %v: ", err)
+		return  nil
 	}
-
-	return startError
+	log.Printf("-------------------base=%v listen=%v", baseListenPort, listenPort)
+	if err := RegistryServiceServant.CreateChord(baseListenPort, listenPort); err != nil {
+		Logger.Printf("Error creating chord: %v", err)
+		return err
+	}
+	startListening()
+	//defer unregister()
+    return nil
 }
 
-func (obj *registeryServiceImplementation) Register(ctxt context.Context, sv *ServiceRequest) (e *emptypb.Empty, err error) {
-	//servant := NewRegistryService()
-	//log.Printf("sdfghjkllkjhgfd0")
-	servant.Register(sv.GetName(), sv.GetAddress())
-	return
+func (obj *registeryServiceImplementation) Register(ctxt context.Context, req *ServiceRequest) (e *emptypb.Empty, err error) {
+	// //servant := NewRegistryService()
+	log.Printf("sdfghjkllkjhgfd0")
+	err1 := RegistryServiceServant.Register(req.GetName(), req.GetAddress())
+	if err1 != nil {
+		log.Printf("Failed to register service: %v", err)
+		return nil, err1
+	}
+	
+	return &emptypb.Empty{}, nil
 }
 
-func (obj *registeryServiceImplementation) unregister(ctxt context.Context, sv *ServiceRequest) (e *emptypb.Empty, err error) {
-	//servant := NewRegistryService()
-	//servant= make(map[string]map[string]int)
-	servant.Unregister(sv.GetName(), sv.GetAddress())
-	return
+
+func (obj *registeryServiceImplementation) Unregister(ctxt context.Context, req *ServiceRequest) (e *emptypb.Empty, err error) {
+	
+	err1 := RegistryServiceServant.Unregister(req.GetName(), req.GetAddress())
+	if err1 != nil {
+		log.Printf("Failed to unregister service: %v", err1)
+		return nil, err1
+	}
+	
+	return &emptypb.Empty{}, nil
 }
 
 func (obj *registeryServiceImplementation) Discover(ctxt context.Context, in *wrapperspb.StringValue) (SNode *ServiceNodes, err error) {
 	//servant := NewRegistryService()
-	addresses := servant.Discover(in.GetValue())
+	addresses := RegistryServiceServant.Discover(in.GetValue())
 	if len(addresses) == 0 {
 		return &ServiceNodes{Nodes: []string{}}, nil
 	}
-
-	return &ServiceNodes{Nodes: addresses}, nil
+	return &ServiceNodes{Nodes: []string{}}, nil
 }

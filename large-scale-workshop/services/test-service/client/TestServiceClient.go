@@ -4,13 +4,9 @@ import (
 	context "context"
 	"fmt"
 
-	//"log"
-
-	//"log"
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	service "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
 
-	//"google.golang.org/grpc"
 	zmq "github.com/pebbe/zmq4"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -34,6 +30,7 @@ func NewTestServiceClient() *TestServiceClient {
 }
 
 func (obj *TestServiceClient) HelloWorld() (string, error) {
+	
 	c, closeFunc, err := obj.Connect()
 	if err != nil {
 		return "", fmt.Errorf("could not connect: %v", err)
@@ -166,7 +163,6 @@ func (obj *TestServiceClient) HelloWorldAsync() (func() (string, error), error) 
 }
 
 func (obj *TestServiceClient) HelloToUserAsync(username string) (func() (string, error), error) {
-	// Connect to the service
 	client, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
@@ -192,7 +188,6 @@ func (obj *TestServiceClient) HelloToUserAsync(username string) (func() (string,
 }
 
 func (obj *TestServiceClient) WaitAndRandAsync(seconds int32) (func() (int32, error), error) {
-	// Connect to the service
 	c, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect %v. Error: %v", obj.RegistryAddresses, err)
@@ -201,7 +196,6 @@ func (obj *TestServiceClient) WaitAndRandAsync(seconds int32) (func() (int32, er
 	// Create the request message with wrapperspb.Int32Value
 	req := &wrapperspb.Int32Value{Value: seconds}
 
-	// Return a function that will execute the asynchronous call
 	return func() (int32, error) {
 		defer closeFunc()
 
@@ -222,7 +216,6 @@ func (obj *TestServiceClient) WaitAndRandAsync(seconds int32) (func() (int32, er
 }
 
 func (obj *TestServiceClient) GetAsync(key string) (func() (string, error), error) {
-	// Connect to the service
 	client, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
@@ -231,7 +224,6 @@ func (obj *TestServiceClient) GetAsync(key string) (func() (string, error), erro
 	// Create the request message with wrapperspb.StringValue
 	req := &wrapperspb.StringValue{Value: key}
 
-	// Return a function that will execute the asynchronous call
 	return func() (string, error) {
 		defer closeFunc()
 
@@ -246,7 +238,6 @@ func (obj *TestServiceClient) GetAsync(key string) (func() (string, error), erro
 }
 
 func (obj *TestServiceClient) StoreAsync(key string, value string) (func() error, error) {
-	// Connect to the service
 	client, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
@@ -255,7 +246,6 @@ func (obj *TestServiceClient) StoreAsync(key string, value string) (func() error
 	// Create the request message
 	req := &service.StoreKeyValue{Key: key, Value: value}
 
-	// Return a function that will execute the asynchronous call
 	return func() error {
 		defer closeFunc()
 
@@ -270,13 +260,11 @@ func (obj *TestServiceClient) StoreAsync(key string, value string) (func() error
 }
 
 func (obj *TestServiceClient) IsAliveAsync() (func() (bool, error), error) {
-	// Connect to the service
 	c, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
 	}
 
-	// Return a function that will execute the asynchronous call
 	return func() (bool, error) {
 		defer closeFunc()
 
@@ -291,7 +279,6 @@ func (obj *TestServiceClient) IsAliveAsync() (func() (bool, error), error) {
 }
 
 func (obj *TestServiceClient) ExtractLinksFromURLAsync(url string, depth int32) (func() ([]string, error), error) {
-	// Connect to the service
 	client, closeFunc, err := obj.Connect()
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
@@ -300,7 +287,6 @@ func (obj *TestServiceClient) ExtractLinksFromURLAsync(url string, depth int32) 
 	// Create the request message
 	req := &service.ExtractLinksFromURLParameters{Url: url, Depth: depth}
 
-	// Return a function that will execute the asynchronous call
 	return func() ([]string, error) {
 		defer closeFunc()
 

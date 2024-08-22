@@ -4,7 +4,7 @@ import (
 	metaffi "github.com/MetaFFI/lang-plugin-go/api"
 	goruntime "github.com/MetaFFI/lang-plugin-go/go-runtime"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
-)
+	"log")
 
 type Chord struct {
 	handle goruntime.MetaFFIHandle
@@ -130,6 +130,7 @@ func (c *Chord) Delete(key string) error {
 }
 
 func (c *Chord) GetAllKeys() ([]string, error) {
+	log.Printf("-------------------seg- GetAllKeys in ????????????????")
 	res, err := getAllKeys(c.handle)
 	if err != nil {
 		return nil, err

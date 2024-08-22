@@ -6,14 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	//"sync"
-	//"time"
-
-	//"github.com/pebbe/zmq4"
 	services "github.com/sibaazab/large-scale-workshop.git/services/common"
 	. "github.com/sibaazab/large-scale-workshop.git/services/test-service/common"
 
-	//. "github.com/sibaazab/large-scale-workshop.git/utils"
 	"github.com/sibaazab/large-scale-workshop.git/services/test-service/servant"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -29,9 +24,9 @@ func Start(configData []byte) error {
     bindgRPCToService := func(s grpc.ServiceRegistrar) { 
         RegisterTestServiceServer(s, &testServiceImplementation{})
     }
-    startListening, unregister, Port, _ := services.Start("TestService",0, bindgRPCToService, messageHandler) 
+    startListening, _, Port, _ := services.Start("TestService",0, bindgRPCToService, messageHandler) 
 	log.Printf("TestService listening on port %d", Port)
-	defer unregister()
+	//defer unregister()
 	startListening()
     return nil
 }
